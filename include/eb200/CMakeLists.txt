@@ -22,5 +22,5 @@
 ########################################################################
 install(FILES
     api.h
-    DESTINATION include/eb200
+    if_stream_decode.h DESTINATION include/eb200
 )

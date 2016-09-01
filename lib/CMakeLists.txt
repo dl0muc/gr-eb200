@@ -26,6 +26,7 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
 list(APPEND eb200_sources
+    if_stream_decode_impl.cc
 )
 
 set(eb200_sources "${eb200_sources}" PARENT_SCOPE)
@@ -63,6 +64,7 @@ include_directories(${CPPUNIT_INCLUDE_DIRS})
 list(APPEND test_eb200_sources
     ${CMAKE_CURRENT_SOURCE_DIR}/test_eb200.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/qa_eb200.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/qa_if_stream_decode.cc
 )
 
 add_executable(test-eb200 ${test_eb200_sources})

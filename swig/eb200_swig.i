@@ -8,6 +8,9 @@
 %include "eb200_swig_doc.i"
 
 %{
+#include "eb200/if_stream_decode.h"
 %}
 
 
+%include "eb200/if_stream_decode.h"
+GR_SWIG_BLOCK_MAGIC2(eb200, if_stream_decode);

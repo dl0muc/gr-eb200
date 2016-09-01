@@ -18,5 +18,5 @@
 # Boston, MA 02110-1301, USA.
 
 install(FILES
-    DESTINATION share/gnuradio/grc/blocks
+    eb200_if_stream_decode.xml DESTINATION share/gnuradio/grc/blocks
 )

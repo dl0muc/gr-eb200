@@ -26,11 +26,13 @@
  */
 
 #include "qa_eb200.h"
+#include "qa_if_stream_decode.h"
 
 CppUnit::TestSuite *
 qa_eb200::suite()
 {
   CppUnit::TestSuite *s = new CppUnit::TestSuite("eb200");
+  s->addTest(gr::eb200::qa_if_stream_decode::suite());
 
   return s;
 }
