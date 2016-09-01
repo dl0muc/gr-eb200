@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <block>
-  <name>if_stream_decode</name>
+  <name>EB200 IF Stream Decode</name>
   <key>eb200_if_stream_decode</key>
   <category>eb200</category>
   <import>import eb200</import>
@@ -11,28 +11,19 @@
        * key (makes the value accessible as $keyname, e.g. in the make node)
        * type -->
   <param>
-    <name>...</name>
-    <key>...</key>
-    <type>...</type>
+    <name>Debug Output</name>
+    <key>debug</key>
+    <value>False</value>
+    <type>bool</type>
+    <hide>#if str($ignoretag()) == 'True' then 'part' else 'none'#</hide>
   </param>
 
-  <!-- Make one 'sink' node per input. Sub-nodes:
-       * name (an identifier for the GUI)
-       * type
-       * vlen
-       * optional (set to 1 for optional inputs) -->
   <sink>
     <name>in</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>byte</type>
   </sink>
-
-  <!-- Make one 'source' node per output. Sub-nodes:
-       * name (an identifier for the GUI)
-       * type
-       * vlen
-       * optional (set to 1 for optional inputs) -->
   <source>
     <name>out</name>
-    <type><!-- e.g. int, float, complex, byte, short, xxx_vector, ...--></type>
+    <type>short</type>
   </source>
 </block>
