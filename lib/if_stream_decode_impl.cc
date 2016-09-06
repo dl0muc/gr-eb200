@@ -213,6 +213,13 @@ namespace gr {
           memcpy(&imag, &in[consumedInputItems+2], sizeof(short));
           consumedInputItems += 2*sizeof(short);
 
+          // If SWAP flag is not set, do NOTH conversion
+          if(!(udp_datagram_attribute.SelectorFlags & 0x20000000))
+          {
+            real = ntohs(real);
+            imag = ntohs(imag);
+          }
+
           // Assign items to output stream
           out[producedOutputItems++] = real;
           out[producedOutputItems++] = imag;
