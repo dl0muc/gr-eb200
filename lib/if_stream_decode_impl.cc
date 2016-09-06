@@ -178,7 +178,6 @@ namespace gr {
 
           // Check for magic number and correct mode (901 = IF STREAM)
           if(eb200_header.MagicNumber == 0xeb200
-             && eb200_header.VersionMinor == 64
              && eb200_header.VersionMajor == 2
              && udp_datagram_attribute.Tag == 901)
           {
