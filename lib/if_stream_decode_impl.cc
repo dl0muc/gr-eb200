@@ -32,7 +32,7 @@
 
 #define dout m_pDebugEnabled && std::cout
 
-#define EB200_UDP_PACKET_SIZE 32796 // Byte
+#define EB200_DEFAULT_UDP_PACKET_SIZE 32796 // Byte
 #define EB200_NSAMPLES_SHORT 8192
 #define EB200_NSAMPLES_LONG 4096
 #define EB200_SAMPLE_SIZE_SHORT 4
@@ -56,7 +56,8 @@ namespace gr {
                    gr::io_signature::make(1, 1, sizeof(unsigned char)),
                    gr::io_signature::make(1, 1, sizeof(short))),
          m_pDebugEnabled(debug),
-         m_pSynced(false)
+         m_pSynced(false),
+         m_pDataSize(EB200_DEFAULT_UDP_PACKET_SIZE)
      {}
 
     /*
@@ -137,7 +138,7 @@ namespace gr {
     if_stream_decode_impl::forecast (int noutput_items,
                                      gr_vector_int &ninput_items_required)
     {
-      ninput_items_required[0] = EB200_UDP_PACKET_SIZE;
+      ninput_items_required[0] = m_pDataSize;
     }
 
     int
@@ -184,6 +185,7 @@ namespace gr {
             producedSamples = 0;
             consumedInputItems += UDP_HEADER_SIZE;
 
+            m_pDataSize = eb200_header.DataSize;
             m_pSynced = true;
 
             if(m_pDebugEnabled)
@@ -216,7 +218,9 @@ namespace gr {
           out[producedOutputItems++] = imag;
           producedSamples++;
 
-          if(producedSamples==EB200_NSAMPLES_SHORT)
+          // Stop working on this packet when we reach
+          // the given number of items (samples)
+          if(producedSamples==udp_datagram_attribute.NumItems)
           {
             m_pSynced = false;
             break;

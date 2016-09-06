@@ -33,6 +33,8 @@ namespace gr {
      private:
       bool m_pDebugEnabled;
       bool m_pSynced;
+      // Expected DataSize of the received packets, read from Common Header
+      unsigned long m_pDataSize;
 
       void decode_header(const unsigned char *in,
                          EB200_HEADER_TYPE &,
