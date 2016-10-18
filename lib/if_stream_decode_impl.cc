@@ -160,14 +160,6 @@ namespace gr {
       dout << "ninput_items: " << ninput_items[0] << std::endl;
       dout << "noutput_items: " << noutput_items << std::endl;
 
-      // Only act if we got enough output buffer for the payload of a whole packet,
-      // which is NUM_SAMPLES * 2 (because of interleaved I and Q output)
-      if (noutput_items < EB200_NSAMPLES_SHORT*2)
-      {
-        // Output Buffer too small, do nothing
-        return 0;
-      }
-
       // Not synced -> Looking for EB200 Header
       if(!m_pSynced)
       {
@@ -181,6 +173,14 @@ namespace gr {
              && eb200_header.VersionMajor == 2
              && udp_datagram_attribute.Tag == 901)
           {
+            // Only act if we got enough output buffer for the payload of a whole packet,
+            // which is NUM_SAMPLES * 2 (because of interleaved I and Q output)
+            if (noutput_items < udp_datagram_attribute.NumItems*2)
+            {
+              // Output Buffer too small, do nothing
+              return 0;
+            }
+
             producedSamples = 0;
             consumedInputItems += UDP_HEADER_SIZE;
 
@@ -199,20 +199,37 @@ namespace gr {
       // Header as ok, working on the Payload now
       if(m_pSynced)
       {
+        // Deciding about sample size by number of items in packet
+        short sampleSize = udp_datagram_attribute.Length
+                            /udp_datagram_attribute.NumItems;
+
+        switch(sampleSize)
+        {
+          case EB200_SAMPLE_SIZE_SHORT:
+            break;
+          case EB200_SAMPLE_SIZE_LONG:
+            std::cout << "LONG sample format not implemented yet" << std::endl;
+            return -1;
+            break;
+          default:
+            std::cout << "Unkown sample format, aborting" << std::endl;
+            return -1;
+        }
+
         // Work as long as output buffer is not full and we still got enough
         // input data to form a IQ sample
         while((producedOutputItems < noutput_items)
-             && (ninput_items[0]-consumedInputItems)>=4)
+              && (ninput_items[0]-consumedInputItems) >= sampleSize)
         {
           short real = 0x00;
           short imag = 0x00;
 
           // No marshalling necessary
-          memcpy(&real, &in[consumedInputItems], sizeof(short));
-          memcpy(&imag, &in[consumedInputItems+2], sizeof(short));
-          consumedInputItems += 2*sizeof(short);
+          memcpy(&real, &in[consumedInputItems], sampleSize);
+          memcpy(&imag, &in[consumedInputItems+(sampleSize/2)], sampleSize);
+          consumedInputItems += sampleSize;
 
-          // If SWAP flag is not set, do NOTH conversion
+          // If SWAP flag is not set, do NTOH conversion
           if(!(udp_datagram_attribute.SelectorFlags & 0x20000000))
           {
             real = ntohs(real);
