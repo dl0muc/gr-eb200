@@ -225,8 +225,8 @@ namespace gr {
           short imag = 0x00;
 
           // No marshalling necessary
-          memcpy(&real, &in[consumedInputItems], sampleSize);
-          memcpy(&imag, &in[consumedInputItems+(sampleSize/2)], sampleSize);
+          memcpy(&real, &in[consumedInputItems], sampleSize/2);
+          memcpy(&imag, &in[consumedInputItems+(sampleSize/2)], sampleSize/2);
           consumedInputItems += sampleSize;
 
           // If SWAP flag is not set, do NTOH conversion
