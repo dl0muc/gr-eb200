@@ -24,6 +24,6 @@
   </sink>
   <source>
     <name>out</name>
-    <type>short</type>
+    <type>complex</type>
   </source>
 </block>

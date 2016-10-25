@@ -54,7 +54,7 @@ namespace gr {
      if_stream_decode_impl::if_stream_decode_impl(bool debug)
        : gr::block("if_stream_decode",
                    gr::io_signature::make(1, 1, sizeof(unsigned char)),
-                   gr::io_signature::make(1, 1, sizeof(short))),
+                   gr::io_signature::make(1, 1, sizeof(gr_complex))),
          m_pDebugEnabled(debug),
          m_pSynced(false),
          m_pDataSize(EB200_DEFAULT_UDP_PACKET_SIZE)
@@ -148,7 +148,7 @@ namespace gr {
                                          gr_vector_void_star &output_items)
     {
       const unsigned char *in = (const unsigned char *) input_items[0];
-      short *out = (short *) output_items[0];
+      gr_complex *out = (gr_complex *) output_items[0];
 
       static EB200_HEADER_TYPE eb200_header;
       static UDP_DATAGRAM_ATTRIBUTE_TYPE udp_datagram_attribute;
@@ -173,12 +173,12 @@ namespace gr {
              && eb200_header.VersionMajor == 2
              && udp_datagram_attribute.Tag == 901)
           {
-            // Only act if we got enough output buffer for the payload of a whole packet,
-            // which is NUM_SAMPLES * 2 (because of interleaved I and Q output)
-            if (noutput_items < udp_datagram_attribute.NumItems*2)
+            // Only act if we got enough output buffer for the payload
+            // of a whole packet, which is NumItems
+            if (noutput_items < udp_datagram_attribute.NumItems)
             {
               // Output Buffer too small, do nothing
-              return 0;
+              //return 0;
             }
 
             producedSamples = 0;
@@ -236,9 +236,10 @@ namespace gr {
             imag = ntohs(imag);
           }
 
+          out[producedOutputItems++] = gr_complex((float)real,(float)imag);
           // Assign items to output stream
-          out[producedOutputItems++] = real;
-          out[producedOutputItems++] = imag;
+          //out[producedOutputItems++] = real;
+          //out[producedOutputItems++] = imag;
           producedSamples++;
 
           // Stop working on this packet when we reach
