@@ -33,8 +33,6 @@
 #define dout m_pDebugEnabled && std::cout
 
 #define EB200_DEFAULT_UDP_PACKET_SIZE 32796 // Byte
-#define EB200_NSAMPLES_SHORT 8192
-#define EB200_NSAMPLES_LONG 4096
 #define EB200_SAMPLE_SIZE_SHORT 4
 #define EB200_SAMPLE_SIZE_LONG 8
 
@@ -150,10 +148,11 @@ namespace gr {
       const unsigned char *in = (const unsigned char *) input_items[0];
       gr_complex *out = (gr_complex *) output_items[0];
 
+      // Keep this data across several runs of the worker method
       static EB200_HEADER_TYPE eb200_header;
       static UDP_DATAGRAM_ATTRIBUTE_TYPE udp_datagram_attribute;
       static unsigned short producedSamples = 0;
-
+      // This data is only relevant for the current run of the worker
       unsigned int consumedInputItems = 0;
       int producedOutputItems = 0;
 
@@ -173,18 +172,11 @@ namespace gr {
              && eb200_header.VersionMajor == 2
              && udp_datagram_attribute.Tag == 901)
           {
-            // Only act if we got enough output buffer for the payload
-            // of a whole packet, which is NumItems
-            if (noutput_items < udp_datagram_attribute.NumItems)
-            {
-              // Output Buffer too small, do nothing
-              //return 0;
-            }
-
+            // Reset sample counter for a new packet
             producedSamples = 0;
-            consumedInputItems += UDP_HEADER_SIZE;
-
             m_pDataSize = eb200_header.DataSize;
+            // Header was read successfully
+            consumedInputItems += UDP_HEADER_SIZE;
             m_pSynced = true;
 
             if(m_pDebugEnabled)
@@ -196,25 +188,12 @@ namespace gr {
         }
       }
 
-      // Header as ok, working on the Payload now
+      // Header was ok, working on the Payload now
       if(m_pSynced)
       {
-        // Deciding about sample size by number of items in packet
+        // Deciding about sample size (I+Q) by number of items in packet
         short sampleSize = udp_datagram_attribute.Length
                             /udp_datagram_attribute.NumItems;
-
-        switch(sampleSize)
-        {
-          case EB200_SAMPLE_SIZE_SHORT:
-            break;
-          case EB200_SAMPLE_SIZE_LONG:
-            std::cout << "LONG sample format not implemented yet" << std::endl;
-            return -1;
-            break;
-          default:
-            std::cout << "Unkown sample format, aborting" << std::endl;
-            return -1;
-        }
 
         // Work as long as output buffer is not full and we still got enough
         // input data to form a IQ sample
@@ -223,10 +202,35 @@ namespace gr {
         {
           short real = 0x00;
           short imag = 0x00;
+          long reall = 0x00;
+          long imagl = 0x00;
 
-          // No marshalling necessary
-          memcpy(&real, &in[consumedInputItems], sampleSize/2);
-          memcpy(&imag, &in[consumedInputItems+(sampleSize/2)], sampleSize/2);
+          switch(sampleSize)
+          {
+            case EB200_SAMPLE_SIZE_SHORT:
+              memcpy(&real, &in[consumedInputItems], sampleSize/2);
+              memcpy(&imag, &in[consumedInputItems+(sampleSize/2)], sampleSize/2);
+
+              break;
+            case EB200_SAMPLE_SIZE_LONG:
+              memcpy(&reall, &in[consumedInputItems], sampleSize/2);
+              memcpy(&imagl, &in[consumedInputItems+(sampleSize/2)], sampleSize/2);
+
+              // Apparently, "long" does not mean 32 bit of usable data per sample
+              // Samples look like 00 13 82 00 00 00 4B 00,
+              // where only the inner two Bytes contain useful data (1382, 004B)
+              // Highest and lowest Byte are discarded for now and we
+              // end up with a "short" resolution of 2*16 bit again
+              // This was found out using an EB500, might be different for
+              // other hardware/protocol versions
+              real = (reall >> 8) & 0xFFFF;
+              imag = (imagl >> 8) & 0xFFFF;
+
+              break;
+            default:
+              std::cout << "Unkown sample length, aborting" << std::endl;
+              return -1;
+          }
           consumedInputItems += sampleSize;
 
           // If SWAP flag is not set, do NTOH conversion
@@ -236,10 +240,8 @@ namespace gr {
             imag = ntohs(imag);
           }
 
-          out[producedOutputItems++] = gr_complex((float)real,(float)imag);
           // Assign items to output stream
-          //out[producedOutputItems++] = real;
-          //out[producedOutputItems++] = imag;
+          out[producedOutputItems++] = gr_complex((float)real,(float)imag);
           producedSamples++;
 
           // Stop working on this packet when we reach
