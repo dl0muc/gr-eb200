@@ -221,10 +221,21 @@ namespace gr {
               // where only the inner two Bytes contain useful data (1382, 004B)
               // Highest and lowest Byte are discarded for now and we
               // end up with a "short" resolution of 2*16 bit again
-              // This was found out using an EB500, might be different for
-              // other hardware/protocol versions
-              real = (reall >> 8) & 0xFFFF;
-              imag = (imagl >> 8) & 0xFFFF;
+              // This behavior was seen e.g. on an EB500 device.
+              if(eb200_header.VersionMinor == 97)
+              {
+                real = (reall >> 8) & 0xFFFF;
+                imag = (imagl >> 8) & 0xFFFF;
+              }
+              // Using the EM100 receiver, the "long" format contains
+              // 3 usable bytes, e.g. F4 CC DC 00 17 B3 D3 00,
+              // so the least significant byte can be discarded.
+              // This is applicable e.g. for EM100.
+              else // VersionMinor == 64
+              {
+                real = (short)(reall >> 16);
+                imag = (short)(imagl >> 16);
+              }
 
               break;
             default:
@@ -240,8 +251,13 @@ namespace gr {
             imag = ntohs(imag);
           }
 
+          // Convert to float
+          float realf, imagf;
+          realf = (float)real;
+          imagf = (float)imag;
+
           // Assign items to output stream
-          out[producedOutputItems++] = gr_complex((float)real,(float)imag);
+          out[producedOutputItems++] = gr_complex(realf, imagf);
           producedSamples++;
 
           // Stop working on this packet when we reach
