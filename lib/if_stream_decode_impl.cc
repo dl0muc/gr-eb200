@@ -203,12 +203,10 @@ namespace gr {
           return 0;
         }
 
-
         // Deciding about sample size (I+Q) by number of items in packet
         short sampleSize = udp_datagram_attribute.Length
                             /udp_datagram_attribute.NumItems;
-        
-        
+                
         // Work as long as output buffer is not full and we still got enough
         // input data to form a IQ sample
         while((producedOutputItems < noutput_items)
@@ -286,9 +284,7 @@ namespace gr {
       else
       {
         std::cout << "Sync loss, something went wrong in UDP communication" << std::endl;
-        m_pSynced = false;
-        // break;
-        // return -1;
+        return -1;
       }
 
       dout << "consumedInputItems: " << consumedInputItems << std::endl;
