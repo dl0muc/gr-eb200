@@ -252,7 +252,12 @@ namespace gr {
               break;
             default:
               std::cout << "Unkown sample length, aborting" << std::endl;
-              return -1;
+              m_pSynced = false;
+              consumedInputItems=ninput_items[0];
+              consume_each(consumedInputItems);
+              producedSamples=0;
+              return 0;
+              // return -1;
           }
           consumedInputItems += sampleSize;
 
@@ -284,7 +289,12 @@ namespace gr {
       else
       {
         std::cout << "Sync loss, something went wrong in UDP communication" << std::endl;
-        return -1;
+        m_pSynced = false;
+        consumedInputItems=ninput_items[0];
+        consume_each(consumedInputItems);
+        producedSamples=0;
+        return 0;
+        //return -1;
       }
 
       dout << "consumedInputItems: " << consumedInputItems << std::endl;
