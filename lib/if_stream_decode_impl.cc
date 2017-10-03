@@ -191,10 +191,22 @@ namespace gr {
       // Header was ok, working on the Payload now
       if(m_pSynced)
       {
+
+        // special case: radio indicates that the packet has no samples
+        if (udp_datagram_attribute.NumItems == 0)
+        {
+          std::cout << "Incomplete packet, skipping" << std::endl;
+          m_pSynced = false;
+          consumedInputItems=ninput_items[0];
+          consume_each(consumedInputItems);
+          producedSamples=0;
+          return 0;
+        }
+
         // Deciding about sample size (I+Q) by number of items in packet
         short sampleSize = udp_datagram_attribute.Length
                             /udp_datagram_attribute.NumItems;
-
+                
         // Work as long as output buffer is not full and we still got enough
         // input data to form a IQ sample
         while((producedOutputItems < noutput_items)
@@ -240,7 +252,12 @@ namespace gr {
               break;
             default:
               std::cout << "Unkown sample length, aborting" << std::endl;
-              return -1;
+              m_pSynced = false;
+              consumedInputItems=ninput_items[0];
+              consume_each(consumedInputItems);
+              producedSamples=0;
+              return 0;
+              // return -1;
           }
           consumedInputItems += sampleSize;
 
@@ -272,7 +289,12 @@ namespace gr {
       else
       {
         std::cout << "Sync loss, something went wrong in UDP communication" << std::endl;
-        return -1;
+        m_pSynced = false;
+        consumedInputItems=ninput_items[0];
+        consume_each(consumedInputItems);
+        producedSamples=0;
+        return 0;
+        //return -1;
       }
 
       dout << "consumedInputItems: " << consumedInputItems << std::endl;
