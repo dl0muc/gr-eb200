@@ -1,33 +1,12 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2016 <+YOU OR YOUR COMPANY+>.
+ * Copyright 2023 gr-eb200 author.
  *
- * This is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3, or (at your option)
- * any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this software; see the file COPYING.  If not, write to
- * the Free Software Foundation, Inc., 51 Franklin Street,
- * Boston, MA 02110-1301, USA.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <gnuradio/io_signature.h>
 #include "if_stream_decode_impl.h"
-
-// For printf
-#include <stdio.h>
-// For nothl/s functions
+#include <gnuradio/io_signature.h>
 #include <netinet/in.h>
 
 #define dout m_pDebugEnabled && std::cout
@@ -37,33 +16,28 @@
 #define EB200_SAMPLE_SIZE_LONG 8
 
 namespace gr {
-  namespace eb200 {
+namespace eb200 {
 
-    if_stream_decode::sptr
-    if_stream_decode::make(bool debug)
-    {
-      return gnuradio::get_initial_sptr
-        (new if_stream_decode_impl(debug));
-    }
+using input_type = char;
+using output_type = gr_complex;
+if_stream_decode::sptr if_stream_decode::make(bool debug) {
+  return gnuradio::make_block_sptr<if_stream_decode_impl>(debug);
+}
 
-    /*
-     * The private constructor
-     */
-     if_stream_decode_impl::if_stream_decode_impl(bool debug)
-       : gr::block("if_stream_decode",
-                   gr::io_signature::make(1, 1, sizeof(unsigned char)),
-                   gr::io_signature::make(1, 1, sizeof(gr_complex))),
-         m_pDebugEnabled(debug),
-         m_pSynced(false),
-         m_pDataSize(EB200_DEFAULT_UDP_PACKET_SIZE)
-     {}
+/*
+ * The private constructor
+ */
+if_stream_decode_impl::if_stream_decode_impl(bool debug)
+    : gr::block(
+          "if_stream_decode",
+          gr::io_signature::make(1, 1, sizeof(input_type)),
+          gr::io_signature::make(1, 1, sizeof(output_type))),
+    m_pDebugEnabled(debug),
+    m_pSynced(false),
+    previousSeqNumber(0),
+    m_pDataSize(EB200_DEFAULT_UDP_PACKET_SIZE)
+    {}
 
-    /*
-     * Our virtual destructor.
-     */
-    if_stream_decode_impl::~if_stream_decode_impl()
-    {
-    }
 
     /**
     * \brief Get contents of EB200 Header from Input Stream
@@ -138,6 +112,11 @@ namespace gr {
     {
       ninput_items_required[0] = m_pDataSize;
     }
+    
+/*
+ * Our virtual destructor.
+ */
+if_stream_decode_impl::~if_stream_decode_impl() {}
 
     int
     if_stream_decode_impl::general_work (int noutput_items,
@@ -172,6 +151,14 @@ namespace gr {
              && eb200_header.VersionMajor == 2
              && udp_datagram_attribute.Tag == 901)
           {
+            // Check for sequence errors
+            if (eb200_header.SeqNumber != previousSeqNumber + 1) {
+            	std::cout << "Packet Sequence error: " << (eb200_header.SeqNumber - previousSeqNumber) << std::endl;
+            	previousSeqNumber = eb200_header.SeqNumber;
+            } else {
+                previousSeqNumber++;
+            }
+            	
             // Reset sample counter for a new packet
             producedSamples = 0;
             m_pDataSize = eb200_header.DataSize;
@@ -305,5 +292,5 @@ namespace gr {
       return producedOutputItems;
     }
 
-  } /* namespace eb200 */
+} /* namespace eb200 */
 } /* namespace gr */
