@@ -1,0 +1,25 @@
+id: eb200_if_stream_decode
+label: EB-200 Protocol Decoder
+category: '[RS EB-200]'
+
+templates:
+  imports: from gnuradio import eb200
+  make: eb200.if_stream_decode()
+
+parameters:
+- id: debug
+  label: Debug Output
+  dtype: bool
+  default: False
+
+inputs:
+- label: In
+  domain: stream
+  dtype: byte
+
+outputs:
+- label: IQ
+  domain: stream
+  dtype: complex
+
+file_format: 1
